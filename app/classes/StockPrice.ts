@@ -1,29 +1,26 @@
 import Stock from './Stock';
-import config from '../../config/config';
-import axios from 'axios';
+import StockPriceOutputService from './StockPriceOutputService';
+import DrawndownOutputService from './DrawndownOutputService';
+import { round } from '../utils/index';
 import * as _ from 'lodash';
 import moment from 'moment';
 
-interface StockInformationI {
+export interface IStockInformation {
   date: string;
   highestPrice: number;
   lowestPrice: number;
   closePrice: number;
+  drawDown: number;
 }
 
-interface StockPricesI {
-  getStockprices();
-  calculateReturnRate();
-  calculateDrawndowns();
-}
-
-class StockPrice extends Stock implements StockPricesI  {
+class StockPrice extends Stock  {
   private _apiKey: string;
   private _startDate: string;
   private _symbol: string;
-  private _stockInfo: StockInformationI[];
+  private _stockInfo: IStockInformation[];
+  private stockPriceOutputService: StockPriceOutputService;
+  private drawndownOutputService: DrawndownOutputService;
   private _endDate?: string;
-
 
   constructor() {
     super();
@@ -33,6 +30,8 @@ class StockPrice extends Stock implements StockPricesI  {
     this._startDate = '';
     this._endDate = '';
     this._stockInfo = [];
+    this.stockPriceOutputService = new StockPriceOutputService();
+    this.drawndownOutputService = new DrawndownOutputService();
   }
 
   get apiKey(): string {
@@ -59,11 +58,11 @@ class StockPrice extends Stock implements StockPricesI  {
     this._symbol = value;
   }
 
-  get stockInfo(): StockInformationI[] {
+  get stockInfo(): IStockInformation[] {
     return this._stockInfo;
   }
 
-  set stockInfo(value: StockInformationI[]) {
+  set stockInfo(value: IStockInformation[]) {
     this._stockInfo = value;
   }
 
@@ -75,60 +74,7 @@ class StockPrice extends Stock implements StockPricesI  {
     this._endDate = value;
   }
 
-  orderStockPrices(stockData: any): any {
-    return _.sortBy(stockData,  data => {
-      if (!_.isEmpty(data)) {
-        return data[0];
-      }
-    });
-  }
-
-  storeStockPrices(stockData: any): void {
-    const sortedStockData = this.orderStockPrices(stockData);
-    _.each(sortedStockData, stockData => {
-      let date = moment(new Date(stockData[0])).format('DD.MM.YYYY');
-      let closePrice = stockData[4];
-      let highestPrice = stockData[2];
-      let lowestPrice = stockData[3];
-      this._stockInfo.push({ date, highestPrice, lowestPrice, closePrice });
-    });
-  }
-
-  async getStockprices(): Promise<void | Error> {
-    try {
-      let params = {
-        api_key: this._apiKey
-      };
-
-      if (this._endDate === '') {
-        params['start_date'] = this._startDate;
-      } else {
-        params['start_date'] = this._startDate;
-        params['end_date'] = this._endDate;
-      }
-
-      const url = `${config.quandl.api_endpoint}${this._symbol}/data.json?`;
-      const response = await axios({
-        method: 'get',
-        url,
-        params
-      });
-      this.storeStockPrices(response.data.dataset_data.data);
-    } catch (error) {
-      return Promise.reject(error);
-    }
-
-  }
-
-  calculateReturnRate() {
-    return '';
-  }
-
-  calculateDrawndowns() {
-    return '';
-  }
-
-  parseArguments(args: string[]): void {
+  public parseArguments(args: string[]): void {
     if (!_.isEmpty(args)) {
       const sDate = args[6] + args[4] + args[5];
       const eDate = args[8] ? args[10] + args[8] + args[9] : '';
@@ -145,16 +91,58 @@ class StockPrice extends Stock implements StockPricesI  {
     }
   }
 
-  async printResult(): Promise<string | Error> {
+  public async printResult(): Promise<string | Error> {
     try {
-      await this.getStockprices();
-      let stockPrices = '';
-      _.each(this._stockInfo, (dailyStockInfo: StockInformationI) => {
-        stockPrices += `${dailyStockInfo.date}: Closed at ${dailyStockInfo.closePrice} ` +
-          `(${dailyStockInfo.lowestPrice} ~ ${dailyStockInfo.highestPrice})\n`;
-      });
+      const result = await this.createResultString();
+      return Promise.resolve(result);
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  }
 
-      return Promise.resolve(stockPrices);
+  public async fetchStockPrices(): Promise<void | Error> {
+    try {
+      const params = {
+        api_key: this._apiKey,
+        order: 'asc',
+        start_date: this._startDate,
+        end_date: this._endDate
+      };
+
+      const stockData: any = await this.getStockPrices(this._symbol, params);
+      this.storeStockPrices(stockData);
+      return Promise.resolve(stockData);
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  }
+  public storeStockPrices(stockData: any): void {
+    _.each(stockData, (data: any) => {
+      const date = moment(new Date(data[0])).format('DD.MM.YYYY');
+      const closePrice = data[4];
+      const highestPrice = data[2];
+      const lowestPrice = data[3];
+      const drawDown = round(((highestPrice - lowestPrice) / highestPrice ) * 100);
+      this._stockInfo.push({ date, highestPrice, lowestPrice, closePrice, drawDown });
+    });
+  }
+
+  public calculateReturnRate() {
+    return '';
+  }
+
+  public orderDrawndowns() {
+    return _.orderBy(this.stockInfo, ['drawDown'], ['desc']);
+  }
+
+  public async createResultString(): Promise<string | Error> {
+    try {
+      await this.fetchStockPrices();
+      const outputOfStockPrices = this.stockPriceOutputService.createOutput(this._stockInfo);
+      const stocksWithHighestDrawndowns  = _.take(this.orderDrawndowns(), 3);
+      const outputOfDrawndowns =
+        this.drawndownOutputService.createOutput(stocksWithHighestDrawndowns);
+      return Promise.resolve(outputOfStockPrices + '\n\n' + outputOfDrawndowns);
     } catch (err) {
       return Promise.reject(err);
     }

@@ -1,4 +1,4 @@
-import StockPrice from '../../app/classes/StockPrice';
+import StockPrice, { IStockInformation } from '../../app/classes/StockPrice';
 import Stock from '../../app/classes/Stock';
 
 describe ('StockPrice Tests', () => {
@@ -27,7 +27,8 @@ describe ('StockPrice Tests', () => {
       highestPrice: 12.12,
       lowestPrice: 1.1,
       closePrice: 10,
-    }];
+      drawDown: 1.2
+    }] as IStockInformation[];
     expect(stockPrice.apiKey).toEqual('test');
     expect(stockPrice.symbol).toEqual('AAPL');
     expect(stockPrice.startDate).toEqual('2018-01-01');
@@ -37,6 +38,7 @@ describe ('StockPrice Tests', () => {
       highestPrice: 12.12,
       lowestPrice: 1.1,
       closePrice: 10,
+      drawDown: 1.2
     }]);
     done();
   });
@@ -62,42 +64,15 @@ describe ('StockPrice Tests', () => {
     done();
   });
 
-  test('order stock prices', done => {
-    const stockPrice: StockPrice = new StockPrice();
-    const stockData = [
-      [
-        '2018-03-27',
-        175.15,
-        166.92,
-        168.34
-      ],
-      [
-        '2018-03-26',
-        168.07,
-        166.44,
-        172.77
-      ],
-      [
-        '2018-03-23',
-        169.92,
-        164.94,
-        164.94
-      ]
-    ];
-    const orderedList = stockPrice.orderStockPrices(stockData);
-    expect(orderedList).toEqual(stockData.reverse());
-    done();
-  });
-
   test('store stock prices', async done => {
     const stockPrice: StockPrice = new StockPrice();
     const stockData = [
       [
-        '2018-03-27',
-        173.68,
-        175.15,
-        166.92,
-        168.34
+        '2018-03-23',
+        168.39,
+        169.92,
+        164.94,
+        164.94
       ],
       [
         '2018-03-26',
@@ -107,62 +82,11 @@ describe ('StockPrice Tests', () => {
         172.77
       ],
       [
-        '2018-03-23',
-        168.39,
-        169.92,
-        164.94,
-        164.94
-      ]
-    ];
-    stockPrice.storeStockPrices(stockData);
-    expect(stockPrice.stockInfo.length).toEqual(3);
-    const stockInfo = [
-      {
-        date: '23.03.2018',
-        highestPrice: 169.92,
-        lowestPrice: 164.94,
-        closePrice: 164.94
-      },
-      {
-        date: '26.03.2018',
-        highestPrice: 173.1,
-        lowestPrice: 166.44,
-        closePrice: 172.77
-      },
-      {
-        date: '27.03.2018',
-        highestPrice: 175.15,
-        lowestPrice: 166.92,
-        closePrice: 168.34
-      }
-    ];
-    expect(stockPrice.stockInfo).toEqual(stockInfo);
-    done();
-  });
-
-  test('store stock prices', async done => {
-    const stockPrice: StockPrice = new StockPrice();
-    const stockData = [
-      [
         '2018-03-27',
         173.68,
         175.15,
         166.92,
         168.34
-      ],
-      [
-        '2018-03-26',
-        168.07,
-        173.1,
-        166.44,
-        172.77
-      ],
-      [
-        '2018-03-23',
-        168.39,
-        169.92,
-        164.94,
-        164.94
       ]
     ];
     stockPrice.storeStockPrices(stockData);
@@ -172,19 +96,22 @@ describe ('StockPrice Tests', () => {
         date: '23.03.2018',
         highestPrice: 169.92,
         lowestPrice: 164.94,
-        closePrice: 164.94
+        closePrice: 164.94,
+        drawDown: 2.9,
       },
       {
         date: '26.03.2018',
         highestPrice: 173.1,
         lowestPrice: 166.44,
-        closePrice: 172.77
+        closePrice: 172.77,
+        drawDown: 3.8,
       },
       {
         date: '27.03.2018',
         highestPrice: 175.15,
         lowestPrice: 166.92,
-        closePrice: 168.34
+        closePrice: 168.34,
+        drawDown: 4.7,
       }
     ];
     expect(stockPrice.stockInfo).toEqual(stockInfo);
@@ -196,8 +123,23 @@ describe ('StockPrice Tests', () => {
     const args: string[] = ['ts-node', 'app/stock.ts', 'API_KEY=Gy-GuEPqtyvM4u1SvooJ',
                             'AAPL', 'Jan', '1', '2018', '-', 'Jan', '2', '2018'];
     stockPrice.parseArguments(args);
-    stockPrice.getStockprices().then(() => {
+    stockPrice.fetchStockPrices().then(() => {
       expect(stockPrice.stockInfo.length).not.toEqual(0);
+      done();
+    });
+  });
+
+  test('create result string', async done => {
+    const stockPrice: StockPrice = new StockPrice();
+    const args: string[] = ['ts-node', 'app/stock.ts', 'API_KEY=Gy-GuEPqtyvM4u1SvooJ',
+      'AAPL', 'Jan', '1', '2018', '-', 'Jan', '2', '2018'];
+    stockPrice.parseArguments(args);
+    stockPrice.createResultString().then((resultString: string) => {
+      const expectedResult = '02.01.2018: Closed at 172.26 (169.26 ~ 172.3)\n' + '\n\n' +
+      'First 3 Drawndowns:\n' +
+      '-1.8% (172.3 on 02.01.2018 -> 169.26 on 02.01.2018)\n' +
+      '\nMaximum drawdown: -1.8% (172.3 on 02.01.2018 -> 169.26 on 02.01.2018)';
+      expect(resultString).toEqual(expectedResult);
       done();
     });
   });
@@ -208,7 +150,11 @@ describe ('StockPrice Tests', () => {
                             'AAPL', 'Jan', '1', '2018', '-', 'Jan', '2', '2018'];
     stockPrice.parseArguments(args);
     stockPrice.printResult().then((result: string) => {
-      expect(result).toEqual('02.01.2018: Closed at 172.26 (169.26 ~ 172.3)\n');
+      const expectedResult = '02.01.2018: Closed at 172.26 (169.26 ~ 172.3)\n' + '\n\n' +
+      'First 3 Drawndowns:\n' +
+      '-1.8% (172.3 on 02.01.2018 -> 169.26 on 02.01.2018)\n' +
+      '\nMaximum drawdown: -1.8% (172.3 on 02.01.2018 -> 169.26 on 02.01.2018)';
+      expect(result).toEqual(expectedResult);
       done();
     });
   });
