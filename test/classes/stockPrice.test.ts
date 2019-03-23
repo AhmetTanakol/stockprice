@@ -129,31 +129,18 @@ describe ('StockPrice Tests', () => {
     });
   });
 
-  test('create result string', async done => {
-    const stockPrice: StockPrice = new StockPrice();
-    const args: string[] = ['ts-node', 'app/stock.ts', 'API_KEY=Gy-GuEPqtyvM4u1SvooJ',
-      'AAPL', 'Jan', '1', '2018', '-', 'Jan', '2', '2018'];
-    stockPrice.parseArguments(args);
-    stockPrice.createResultString().then((resultString: string) => {
-      const expectedResult = '02.01.2018: Closed at 172.26 (169.26 ~ 172.3)\n' + '\n\n' +
-      'First 3 Drawndowns:\n' +
-      '-1.8% (172.3 on 02.01.2018 -> 169.26 on 02.01.2018)\n' +
-      '\nMaximum drawdown: -1.8% (172.3 on 02.01.2018 -> 169.26 on 02.01.2018)';
-      expect(resultString).toEqual(expectedResult);
-      done();
-    });
-  });
-
   test('print stock prices', async done => {
     const stockPrice: StockPrice = new StockPrice();
     const args: string[] = ['ts-node', 'app/stock.ts', 'API_KEY=Gy-GuEPqtyvM4u1SvooJ',
                             'AAPL', 'Jan', '1', '2018', '-', 'Jan', '2', '2018'];
     stockPrice.parseArguments(args);
+    await stockPrice.loadData();
     stockPrice.printResult().then((result: string) => {
-      const expectedResult = '02.01.2018: Closed at 172.26 (169.26 ~ 172.3)\n' + '\n\n' +
+      const expectedResult = '02.01.2018: Closed at 172.26 (169.26 ~ 172.3)\n\n\n' +
       'First 3 Drawndowns:\n' +
       '-1.8% (172.3 on 02.01.2018 -> 169.26 on 02.01.2018)\n' +
-      '\nMaximum drawdown: -1.8% (172.3 on 02.01.2018 -> 169.26 on 02.01.2018)';
+      '\nMaximum drawdown: -1.8% (172.3 on 02.01.2018 -> 169.26 on 02.01.2018)\n\n' +
+      'Return: 0 [0%] (172.26 on 02.01.2018 -> 172.26 on 02.01.2018)\n';
       expect(result).toEqual(expectedResult);
       done();
     });
@@ -164,10 +151,11 @@ describe ('StockPrice Tests', () => {
     const args: string[] = ['ts-node', 'app/stock.ts', 'API_KEY=XXXX',
                             'AAPL', 'Jan', '1', '2018', '-', 'Jan', '2', '2018'];
     stockPrice.parseArguments(args);
-    stockPrice.printResult()
-      .catch(err => {
-        expect(err).toBeDefined();
-        done();
-      });
+    try {
+      await stockPrice.loadData();
+    } catch (loadError) {
+      expect(loadError).toBeDefined();
+      done();
+    }
   });
 });

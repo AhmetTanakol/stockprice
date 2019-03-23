@@ -1,6 +1,7 @@
 import Stock from './Stock';
 import StockPriceOutputService from './StockPriceOutputService';
 import DrawndownOutputService from './DrawndownOutputService';
+import StockReturnOutputService from './StockReturnOutputService';
 import { round } from '../utils/index';
 import * as _ from 'lodash';
 import moment from 'moment';
@@ -13,6 +14,13 @@ export interface IStockInformation {
   drawDown: number;
 }
 
+export interface IStockReturn {
+  returnOfStock: number;
+  returnRate: number;
+  lastStockInfo: IStockInformation;
+  initialStockInfo: IStockInformation;
+}
+
 class StockPrice extends Stock  {
   private _apiKey: string;
   private _startDate: string;
@@ -20,6 +28,8 @@ class StockPrice extends Stock  {
   private _stockInfo: IStockInformation[];
   private stockPriceOutputService: StockPriceOutputService;
   private drawndownOutputService: DrawndownOutputService;
+  private stockReturnOutputService: StockReturnOutputService;
+  private stocksWithHighestDrawndowns: IStockInformation[];
   private _endDate?: string;
 
   constructor() {
@@ -30,8 +40,10 @@ class StockPrice extends Stock  {
     this._startDate = '';
     this._endDate = '';
     this._stockInfo = [];
+    this.stocksWithHighestDrawndowns = [];
     this.stockPriceOutputService = new StockPriceOutputService();
     this.drawndownOutputService = new DrawndownOutputService();
+    this.stockReturnOutputService = new StockReturnOutputService();
   }
 
   get apiKey(): string {
@@ -93,8 +105,14 @@ class StockPrice extends Stock  {
 
   public async printResult(): Promise<string | Error> {
     try {
-      const result = await this.createResultString();
-      return Promise.resolve(result);
+      const outputOfStockPrices = this.stockPriceOutputService.createOutput(this._stockInfo);
+      const outputOfDrawndowns =
+        this.drawndownOutputService.createOutput(this.stocksWithHighestDrawndowns);
+      const outputOfStockReturn =
+        this.stockReturnOutputService.createOutput(this.calculateReturnRate());
+      const resultString =
+        outputOfStockPrices + '\n\n' + outputOfDrawndowns + `\n\n` + outputOfStockReturn;
+      return Promise.resolve(resultString);
     } catch (err) {
       return Promise.reject(err);
     }
@@ -127,22 +145,30 @@ class StockPrice extends Stock  {
     });
   }
 
-  public calculateReturnRate() {
-    return '';
+  public calculateReturnRate(): IStockReturn {
+    const lastStockInfo: IStockInformation = _.last(this._stockInfo);
+    const initialStockInfo: IStockInformation = _.head(this._stockInfo);
+    const lastValue = lastStockInfo.closePrice;
+    const initialValue = initialStockInfo.closePrice;
+
+    return {
+      returnOfStock: lastValue - initialValue,
+      returnRate: round(((lastValue - initialValue) / initialValue) * 100),
+      lastStockInfo,
+      initialStockInfo
+    };
   }
 
-  public orderDrawndowns() {
-    return _.orderBy(this.stockInfo, ['drawDown'], ['desc']);
+  public orderDrawndowns(): void {
+    const stocksWithHighestDrawndowns  = _.take(_.orderBy(this._stockInfo, ['drawDown'], ['desc'])
+                                              , 3);
+    this.stocksWithHighestDrawndowns = stocksWithHighestDrawndowns;
   }
 
-  public async createResultString(): Promise<string | Error> {
+  public async loadData(): Promise<void | Error> {
     try {
       await this.fetchStockPrices();
-      const outputOfStockPrices = this.stockPriceOutputService.createOutput(this._stockInfo);
-      const stocksWithHighestDrawndowns  = _.take(this.orderDrawndowns(), 3);
-      const outputOfDrawndowns =
-        this.drawndownOutputService.createOutput(stocksWithHighestDrawndowns);
-      return Promise.resolve(outputOfStockPrices + '\n\n' + outputOfDrawndowns);
+      this.orderDrawndowns();
     } catch (err) {
       return Promise.reject(err);
     }
