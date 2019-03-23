@@ -1,0 +1,21 @@
+/* NPM Files*/
+node_modules
+
+/* Log Files */
+debug.log
+errors.log
+yarn-error.log
+
+/* Test Coverage Files*/
+/coverage
+
+/* Build Files */
+/dist
+
+/* Editor Files */
+.vscode/
+.idea/
+
+# misc
+.DS_Store
+npm-debug.log*
