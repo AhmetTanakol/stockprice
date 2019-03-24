@@ -46,13 +46,18 @@ import { head, last } from 'lodash';
     try {
       stockPrice.lastStockInfo = last(stockPrice.stockInfo);
       stockPrice.initialStockInfo = head(stockPrice.stockInfo);
-      const results =
-        stockPrice.stockPriceOutputService.createOutput(stockPrice.stockInfo) +
-        '\n\n' +
-        stockPrice.drawndownOutputService.createOutput(stockPrice.stocksWithHighestDrawndowns) +
-        '\n\n' +
-        stockPrice.stockReturnOutputService.createOutput(stockPrice.calculateStockReturn());
+      const stockPrices = stockPrice.stockPriceOutputService.createOutput(stockPrice.stockInfo);
+      const drawnDowns = stockPrice.drawndownOutputService.createOutput(stockPrice.stocksWithHighestDrawndowns);
+      const returnRate = stockPrice.stockReturnOutputService.createOutput(stockPrice.calculateStockReturn());
+      const results = stockPrices + '\n\n' + drawnDowns + '\n\n' + returnRate;
       console.log(results);
+      /**
+       * Email is sent when there is a provided test email and email sending is activated
+       * Currently, email is sent when all information is fetched at once
+       */
+      if (config.email === 'active' && config.sendgrid.test_email !== '') {
+        stockPrice.sendEmailOfStockPrices();
+      }
     } catch (err) {
       throw err;
     }
@@ -92,12 +97,9 @@ import { head, last } from 'lodash';
         let results = stockPrice.stockPriceOutputService.createOutput(stockPrice.stockInfo);
         if (numberOfRequests === 0) {
           stockPrice.lastStockInfo = last(stockPrice.stockInfo);
-          results += '\n\n' +
-                      stockPrice.drawndownOutputService
-                      .createOutput(stockPrice.stocksWithHighestDrawndowns) +
-                      '\n\n' +
-                      stockPrice.stockReturnOutputService
-                      .createOutput(stockPrice.calculateStockReturn());
+          const drawnDowns = stockPrice.drawndownOutputService.createOutput(stockPrice.stocksWithHighestDrawndowns);
+          const returnRate = stockPrice.stockReturnOutputService.createOutput(stockPrice.calculateStockReturn());
+          results += '\n\n' + drawnDowns + '\n\n' + returnRate;
         }
         numberOfRequests -= 1;
         console.log(results);

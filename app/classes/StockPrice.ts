@@ -2,7 +2,13 @@ import Stock from './Stock';
 import StockPriceOutputService from './StockPriceOutputService';
 import DrawndownOutputService from './DrawndownOutputService';
 import StockReturnOutputService from './StockReturnOutputService';
-import { round } from '../utils/index';
+import MailService from './MailService';
+import {
+  drawnDownStringer,
+  round,
+  stockPriceStringer,
+  stockReturnStringer
+} from '../utils/index';
 import * as _ from 'lodash';
 import moment from 'moment';
 
@@ -29,6 +35,7 @@ class StockPrice extends Stock  {
   private _stockPriceOutputService: StockPriceOutputService;
   private _drawndownOutputService: DrawndownOutputService;
   private _stockReturnOutputService: StockReturnOutputService;
+  private _mailService: MailService;
   private _stocksWithHighestDrawndowns: IStockInformation[];
   private _lastStockInfo: IStockInformation;
   private _initialStockInfo: IStockInformation;
@@ -46,6 +53,7 @@ class StockPrice extends Stock  {
     this._stockPriceOutputService = new StockPriceOutputService();
     this._drawndownOutputService = new DrawndownOutputService();
     this._stockReturnOutputService = new StockReturnOutputService();
+    this._mailService = new MailService();
   }
 
   get apiKey(): string {
@@ -166,7 +174,7 @@ class StockPrice extends Stock  {
   }
 
   public calculateStockReturn(): IStockReturn {
-    if (this.lastStockInfo === undefined || this.initialStockInfo) {
+    if (this.lastStockInfo === undefined || this.initialStockInfo === undefined) {
       return {};
     }
     const lastValue = this.lastStockInfo.closePrice;
@@ -202,6 +210,23 @@ class StockPrice extends Stock  {
     } catch (err) {
       return Promise.reject(err);
     }
+  }
+
+  public sendEmailOfStockPrices() {
+    const drawnDownsInfo = drawnDownStringer(this._stocksWithHighestDrawndowns);
+    const stockPricesInfo = stockPriceStringer(this._stockInfo);
+    const returnRate = stockReturnStringer(this.calculateStockReturn());
+    const mailData = {
+      startDate: this._startDate,
+      endDate: this._startDate,
+      stockPrices: stockPricesInfo.stockPrices,
+      drawnDowns: drawnDownsInfo.drawnDowns,
+      maxDrawndown: drawnDownsInfo.maxDrawndown,
+      returnRate: returnRate,
+      symbol: this._symbol,
+    };
+    this._mailService.mailData = mailData;
+    this._mailService.sendStockPricesEmail();
   }
 
 }

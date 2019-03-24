@@ -1,6 +1,7 @@
 import { IOutputService } from './OutputService';
 import { IStockInformation } from '../classes/StockPrice';
 import { each, isEmpty, trim } from 'lodash';
+import { stockPriceStringer } from '../utils/index';
 
 class StockPriceOutputService implements IOutputService {
 
@@ -9,9 +10,9 @@ class StockPriceOutputService implements IOutputService {
             return '';
         }
         let stockPrices = '';
-        each(stockInfo, (dailyStockInfo: IStockInformation) => {
-            stockPrices += `${dailyStockInfo.date}: Closed at ${dailyStockInfo.closePrice} ` +
-                        `(${dailyStockInfo.lowestPrice} ~ ${dailyStockInfo.highestPrice})\n`;
+        const stockPricesInfo = stockPriceStringer(stockInfo);
+        each(stockPricesInfo.stockPrices, sP => {
+            stockPrices += sP.stockPrice + '\n';
         });
 
         return trim(stockPrices);
