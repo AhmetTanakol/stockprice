@@ -1,6 +1,6 @@
 import { IOutputService } from './OutputService';
 import { IStockInformation } from '../classes/StockPrice';
-import { each } from 'lodash';
+import { each, trim } from 'lodash';
 
 class StockPriceOutputService implements IOutputService {
 
@@ -11,7 +11,7 @@ class StockPriceOutputService implements IOutputService {
                         `(${dailyStockInfo.lowestPrice} ~ ${dailyStockInfo.highestPrice})\n`;
         });
 
-        return stockPrices;
+        return trim(stockPrices);
     }
 }
 

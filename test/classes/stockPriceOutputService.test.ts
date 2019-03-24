@@ -29,7 +29,7 @@ describe ('StockPriceOutputService Tests', () => {
     const outputOfStockPrices = stockPriceOutputService.createOutput(stockInfo);
     const expectedResult = '23.03.2018: Closed at 164.94 (164.94 ~ 169.92)\n' +
     '26.03.2018: Closed at 172.77 (166.44 ~ 173.1)\n' +
-    '27.03.2018: Closed at 168.34 (166.92 ~ 175.15)\n';
+    '27.03.2018: Closed at 168.34 (166.92 ~ 175.15)';
     expect(outputOfStockPrices).toEqual(expectedResult);
     done();
   });

@@ -26,10 +26,12 @@ class StockPrice extends Stock  {
   private _startDate: string;
   private _symbol: string;
   private _stockInfo: IStockInformation[];
-  private stockPriceOutputService: StockPriceOutputService;
-  private drawndownOutputService: DrawndownOutputService;
-  private stockReturnOutputService: StockReturnOutputService;
-  private stocksWithHighestDrawndowns: IStockInformation[];
+  private _stockPriceOutputService: StockPriceOutputService;
+  private _drawndownOutputService: DrawndownOutputService;
+  private _stockReturnOutputService: StockReturnOutputService;
+  private _stocksWithHighestDrawndowns: IStockInformation[];
+  private _lastStockInfo: IStockInformation;
+  private _initialStockInfo: IStockInformation;
   private _endDate?: string;
 
   constructor() {
@@ -40,10 +42,10 @@ class StockPrice extends Stock  {
     this._startDate = '';
     this._endDate = '';
     this._stockInfo = [];
-    this.stocksWithHighestDrawndowns = [];
-    this.stockPriceOutputService = new StockPriceOutputService();
-    this.drawndownOutputService = new DrawndownOutputService();
-    this.stockReturnOutputService = new StockReturnOutputService();
+    this._stocksWithHighestDrawndowns = [];
+    this._stockPriceOutputService = new StockPriceOutputService();
+    this._drawndownOutputService = new DrawndownOutputService();
+    this._stockReturnOutputService = new StockReturnOutputService();
   }
 
   get apiKey(): string {
@@ -86,6 +88,42 @@ class StockPrice extends Stock  {
     this._endDate = value;
   }
 
+  get stockPriceOutputService(): StockPriceOutputService {
+    return this._stockPriceOutputService;
+  }
+
+  get drawndownOutputService(): DrawndownOutputService {
+    return this._drawndownOutputService;
+  }
+
+  get stockReturnOutputService(): StockReturnOutputService {
+    return this._stockReturnOutputService;
+  }
+
+  get stocksWithHighestDrawndowns(): IStockInformation[] {
+    return this._stocksWithHighestDrawndowns;
+  }
+
+  set stocksWithHighestDrawndowns(value: IStockInformation[]) {
+    this._stocksWithHighestDrawndowns = value;
+  }
+
+  get lastStockInfo(): IStockInformation {
+    return this._lastStockInfo;
+  }
+
+  get initialStockInfo(): IStockInformation {
+    return this._initialStockInfo;
+  }
+
+  set lastStockInfo(value: IStockInformation) {
+    this._lastStockInfo = value;
+  }
+
+  set initialStockInfo(value: IStockInformation) {
+    this._initialStockInfo = value;
+  }
+
   public parseArguments(args: string[]): void {
     if (!_.isEmpty(args)) {
       const sDate = args[6] + args[4] + args[5];
@@ -103,32 +141,12 @@ class StockPrice extends Stock  {
     }
   }
 
-  public async printResult(): Promise<string | Error> {
+  public async fetchStockPrices(params: any): Promise<void | Error> {
     try {
-      const outputOfStockPrices = this.stockPriceOutputService.createOutput(this._stockInfo);
-      const outputOfDrawndowns =
-        this.drawndownOutputService.createOutput(this.stocksWithHighestDrawndowns);
-      const outputOfStockReturn =
-        this.stockReturnOutputService.createOutput(this.calculateReturnRate());
-      const resultString =
-        outputOfStockPrices + '\n\n' + outputOfDrawndowns + `\n\n` + outputOfStockReturn;
-      return Promise.resolve(resultString);
-    } catch (err) {
-      return Promise.reject(err);
-    }
-  }
-
-  public async fetchStockPrices(): Promise<void | Error> {
-    try {
-      const params = {
-        api_key: this._apiKey,
-        order: 'asc',
-        start_date: this._startDate,
-        end_date: this._endDate
-      };
-
+      this._stockInfo = [];
       const stockData: any = await this.getStockPrices(this._symbol, params);
       this.storeStockPrices(stockData);
+      this.orderDrawndowns();
       return Promise.resolve(stockData);
     } catch (error) {
       return Promise.reject(error);
@@ -145,30 +163,37 @@ class StockPrice extends Stock  {
     });
   }
 
-  public calculateReturnRate(): IStockReturn {
-    const lastStockInfo: IStockInformation = _.last(this._stockInfo);
-    const initialStockInfo: IStockInformation = _.head(this._stockInfo);
-    const lastValue = lastStockInfo.closePrice;
-    const initialValue = initialStockInfo.closePrice;
+  public calculateStockReturn(): IStockReturn {
+    const lastValue = this.lastStockInfo.closePrice;
+    const initialValue = this.initialStockInfo.closePrice;
 
     return {
       returnOfStock: lastValue - initialValue,
       returnRate: round(((lastValue - initialValue) / initialValue) * 100),
-      lastStockInfo,
-      initialStockInfo
+      lastStockInfo: this.lastStockInfo,
+      initialStockInfo: this.initialStockInfo
     };
   }
 
   public orderDrawndowns(): void {
-    const stocksWithHighestDrawndowns  = _.take(_.orderBy(this._stockInfo, ['drawDown'], ['desc'])
+    const stocksWithHighestDrawndowns = _.take(_.orderBy(this._stockInfo, ['drawDown'], ['desc'])
                                               , 3);
-    this.stocksWithHighestDrawndowns = stocksWithHighestDrawndowns;
+    if (!_.isEmpty(this.stocksWithHighestDrawndowns)) {
+      const mergedDrawndownsArrays =
+      this.stocksWithHighestDrawndowns
+      .concat(stocksWithHighestDrawndowns)
+      .sort((stock1, stock2) => {
+        return stock2.drawDown - stock1.drawDown ;
+      });
+      this.stocksWithHighestDrawndowns = _.take(mergedDrawndownsArrays, 3);
+    } else {
+      this.stocksWithHighestDrawndowns = stocksWithHighestDrawndowns;
+    }
   }
 
-  public async loadData(): Promise<void | Error> {
+  public async loadData(params: any): Promise<void | Error> {
     try {
-      await this.fetchStockPrices();
-      this.orderDrawndowns();
+      await this.fetchStockPrices(params);
     } catch (err) {
       return Promise.reject(err);
     }

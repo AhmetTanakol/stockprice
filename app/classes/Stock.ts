@@ -18,7 +18,6 @@ abstract class Stock {
   }
 
   protected abstract parseArguments(args: string[]);
-  protected abstract printResult(): Promise<string | Error>;
 }
 
 export default Stock;

@@ -1,5 +1,6 @@
 import StockPrice, { IStockInformation } from '../../app/classes/StockPrice';
 import Stock from '../../app/classes/Stock';
+import { head, last } from 'lodash';
 
 describe ('StockPrice Tests', () => {
   test('created object type should be instance of StockPrice and Stock', done => {
@@ -123,25 +124,94 @@ describe ('StockPrice Tests', () => {
     const args: string[] = ['ts-node', 'app/stock.ts', 'API_KEY=Gy-GuEPqtyvM4u1SvooJ',
                             'AAPL', 'Jan', '1', '2018', '-', 'Jan', '2', '2018'];
     stockPrice.parseArguments(args);
-    stockPrice.fetchStockPrices().then(() => {
+    const params = {
+      api_key: stockPrice.apiKey,
+      order: 'asc',
+      start_date: stockPrice.startDate,
+      end_date: stockPrice.endDate
+    };
+    stockPrice.loadData(params).then(() => {
       expect(stockPrice.stockInfo.length).not.toEqual(0);
       done();
     });
   });
 
-  test('print stock prices', async done => {
+  test('order drawndowns', async done => {
     const stockPrice: StockPrice = new StockPrice();
     const args: string[] = ['ts-node', 'app/stock.ts', 'API_KEY=Gy-GuEPqtyvM4u1SvooJ',
-                            'AAPL', 'Jan', '1', '2018', '-', 'Jan', '2', '2018'];
+      'AAPL', 'Jan', '1', '2018', '-', 'Jan', '2', '2018'];
     stockPrice.parseArguments(args);
-    await stockPrice.loadData();
-    stockPrice.printResult().then((result: string) => {
-      const expectedResult = '02.01.2018: Closed at 172.26 (169.26 ~ 172.3)\n\n\n' +
-      'First 3 Drawndowns:\n' +
-      '-1.8% (172.3 on 02.01.2018 -> 169.26 on 02.01.2018)\n' +
-      '\nMaximum drawdown: -1.8% (172.3 on 02.01.2018 -> 169.26 on 02.01.2018)\n\n' +
-      'Return: 0 [0%] (172.26 on 02.01.2018 -> 172.26 on 02.01.2018)\n';
-      expect(result).toEqual(expectedResult);
+    const stockData = [
+      [
+        '2018-03-23',
+        168.39,
+        169.92,
+        164.94,
+        164.94
+      ],
+      [
+        '2018-03-26',
+        168.07,
+        173.1,
+        166.44,
+        172.77
+      ],
+      [
+        '2018-03-27',
+        173.68,
+        175.15,
+        166.92,
+        168.34
+      ]
+    ];
+    stockPrice.storeStockPrices(stockData);
+    stockPrice.orderDrawndowns();
+    const params = {
+      api_key: stockPrice.apiKey,
+      order: 'asc',
+      start_date: stockPrice.startDate,
+      end_date: stockPrice.endDate
+    };
+    stockPrice.loadData(params).then(() => {
+      expect(stockPrice.stocksWithHighestDrawndowns.length).not.toEqual(6);
+      expect(stockPrice.stocksWithHighestDrawndowns.length).toEqual(3);
+      done();
+    });
+  });
+
+  test('calculate stock return', async done => {
+    const stockPrice: StockPrice = new StockPrice();
+    const args: string[] = ['ts-node', 'app/stock.ts', 'API_KEY=Gy-GuEPqtyvM4u1SvooJ',
+      'AAPL', 'Jan', '1', '2018', '-', 'Jan', '2', '2018'];
+    stockPrice.parseArguments(args);
+    const params = {
+      api_key: stockPrice.apiKey,
+      order: 'asc',
+      start_date: stockPrice.startDate,
+      end_date: stockPrice.endDate
+    };
+    stockPrice.loadData(params).then(() => {
+      stockPrice.lastStockInfo = last(stockPrice.stockInfo);
+      stockPrice.initialStockInfo = head(stockPrice.stockInfo);
+      const expectedResult = {
+        returnOfStock: 0,
+        returnRate: 0,
+        lastStockInfo: {
+            date: '02.01.2018',
+            highestPrice: 172.3,
+            lowestPrice: 169.26,
+            closePrice: 172.26,
+            drawDown: 1.8
+        },
+        initialStockInfo: {
+            date: '02.01.2018',
+            highestPrice: 172.3,
+            lowestPrice: 169.26,
+            closePrice: 172.26,
+            drawDown: 1.8
+        }
+      };
+      expect(stockPrice.calculateStockReturn()).toEqual(expectedResult);
       done();
     });
   });
@@ -151,8 +221,14 @@ describe ('StockPrice Tests', () => {
     const args: string[] = ['ts-node', 'app/stock.ts', 'API_KEY=XXXX',
                             'AAPL', 'Jan', '1', '2018', '-', 'Jan', '2', '2018'];
     stockPrice.parseArguments(args);
+    const params = {
+      api_key: stockPrice.apiKey,
+      order: 'asc',
+      start_date: stockPrice.startDate,
+      end_date: stockPrice.endDate
+    };
     try {
-      await stockPrice.loadData();
+      await stockPrice.loadData(params);
     } catch (loadError) {
       expect(loadError).toBeDefined();
       done();
