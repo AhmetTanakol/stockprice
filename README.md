@@ -26,4 +26,7 @@ A simple application backend which makes it possible to access stock information
 
 > You can try MLA style for months
 
-> Please check the config file for env variables and keys
+> To send email, please set sendgrid api key as an environment variable (Example: `SENDGRID_API_KEY=XXXX`)
+
+> To fetch stock data, please provide quandl api key as command line argument
+
