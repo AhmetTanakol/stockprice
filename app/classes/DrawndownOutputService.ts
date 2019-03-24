@@ -1,10 +1,13 @@
 import { IOutputService } from './OutputService';
 import { IStockInformation } from '../classes/StockPrice';
-import { each } from 'lodash';
+import { each, isEmpty } from 'lodash';
 
 class DrawndownOutputService implements IOutputService {
 
     public createOutput(stocksWithHighestDrawndowns: IStockInformation[]): string {
+        if (isEmpty(stocksWithHighestDrawndowns)) {
+            return '';
+        }
         let drawnDowns = 'First 3 Drawndowns:\n';
         each(stocksWithHighestDrawndowns, (stock: IStockInformation) => {
           drawnDowns += `-${stock.drawDown}% (${stock.highestPrice} on ${stock.date} -> ` +

@@ -15,10 +15,10 @@ export interface IStockInformation {
 }
 
 export interface IStockReturn {
-  returnOfStock: number;
-  returnRate: number;
-  lastStockInfo: IStockInformation;
-  initialStockInfo: IStockInformation;
+  returnOfStock?: number;
+  returnRate?: number;
+  lastStockInfo?: IStockInformation;
+  initialStockInfo?: IStockInformation;
 }
 
 class StockPrice extends Stock  {
@@ -131,7 +131,9 @@ class StockPrice extends Stock  {
       const apiKey = args[2].split('=')[1];
       const symbol = args[3];
       const startDate = moment(new Date(sDate)).format('YYYY-MM-DD');
-      const endDate = moment(new Date(eDate)).format('YYYY-MM-DD');
+      const endDate = eDate !== '' ?
+                      moment(new Date(eDate)).format('YYYY-MM-DD') :
+                      sDate;
 
       this._apiKey = apiKey;
       this._symbol = symbol;
@@ -164,6 +166,9 @@ class StockPrice extends Stock  {
   }
 
   public calculateStockReturn(): IStockReturn {
+    if (this.lastStockInfo === undefined || this.initialStockInfo) {
+      return {};
+    }
     const lastValue = this.lastStockInfo.closePrice;
     const initialValue = this.initialStockInfo.closePrice;
 

@@ -3,13 +3,34 @@ import config from '../config/config';
 import moment from 'moment';
 import { head, last } from 'lodash';
 
+/**
+ * Main function
+ */
 (async () => {
+  /**
+   * Creat a stockprice object and parse command line arguments
+   * @type {StockPrice}
+   */
   const stockPrice = new StockPrice();
   stockPrice.parseArguments(process.argv);
+
+  /**
+   * Limit value is used to limit number of days when data is fetched
+   * The amount of data can be huge, so we have to put a limitation
+   *
+   */
   const limit = config.limit;
+
   const sDate = moment(new Date(stockPrice.startDate));
-  const eDate = moment(new Date(stockPrice.endDate));
+  const eDate = stockPrice.endDate !== '' ?
+                moment(new Date(stockPrice.endDate)) :
+                sDate;
   const dateDiff = eDate.diff(sDate, 'days');
+  /**
+   * If the given date range is smaller than limit
+   * We can fetch all the data at once
+   *
+   */
   if (dateDiff <= limit) {
     try {
       const params = {
@@ -36,6 +57,12 @@ import { head, last } from 'lodash';
       throw err;
     }
   } else {
+    /**
+     * If the given date range is larger than limit
+     * We get data for the first n days (n is equal to limit)
+     * Increment n by the value of limit until we fetch data for all days
+     *
+     */
     let numberOfRequests = Math.floor(dateDiff / limit);
     let startDate = moment(new Date(stockPrice.startDate)).format('YYYY-MM-DD');
     let endDate = moment(new Date(stockPrice.startDate)).add(limit, 'days').format('YYYY-MM-DD');
@@ -57,6 +84,11 @@ import { head, last } from 'lodash';
         throw err;
       }
       try {
+        /**
+         * Stock prices should be displayed at every step
+         * Maximum drawndowns and return rate are displayed only at the end
+         *
+         */
         let results = stockPrice.stockPriceOutputService.createOutput(stockPrice.stockInfo);
         if (numberOfRequests === 0) {
           stockPrice.lastStockInfo = last(stockPrice.stockInfo);
@@ -72,6 +104,14 @@ import { head, last } from 'lodash';
       } catch (err) {
         throw err;
       }
+      /**
+       * Set the next start date and end date
+       * Momentjs is used to handle date operations
+       * However some mutability issues exist
+       * I had to create a new moment object whenever I need a new date
+       * To eliminate duplicate results, I always set the next start day to endDate + 1
+       *
+       */
       startDate = moment(new Date(endDate)).add(1, 'days').format('YYYY-MM-DD');
       const currentDateDiff = eDate.diff(startDate, 'days');
 

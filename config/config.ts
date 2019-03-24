@@ -6,7 +6,7 @@ const config = {
                     'https://www.quandl.com/api/v3/datasets/WIKI/',
       api_key: process.env.QUANDL_API_KEY || 'Gy-GuEPqtyvM4u1SvooJ'
     },
-    limit: 10
+    limit: 100
   },
   test: {
     quandl: {
