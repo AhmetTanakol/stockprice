@@ -136,7 +136,7 @@ describe ('StockPrice Tests', () => {
     });
   });
 
-  test('order drawndowns', async done => {
+  test('order drawdowns', async done => {
     const stockPrice: StockPrice = new StockPrice();
     const args: string[] = ['ts-node', 'app/stock.ts', 'API_KEY=Gy-GuEPqtyvM4u1SvooJ',
       'AAPL', 'Jan', '1', '2018', '-', 'Jan', '2', '2018'];
@@ -165,7 +165,7 @@ describe ('StockPrice Tests', () => {
       ]
     ];
     stockPrice.storeStockPrices(stockData);
-    stockPrice.orderDrawndowns();
+    stockPrice.orderDrawdowns();
     const params = {
       api_key: stockPrice.apiKey,
       order: 'asc',
@@ -173,8 +173,8 @@ describe ('StockPrice Tests', () => {
       end_date: stockPrice.endDate
     };
     stockPrice.loadData(params).then(() => {
-      expect(stockPrice.stocksWithHighestDrawndowns.length).not.toEqual(6);
-      expect(stockPrice.stocksWithHighestDrawndowns.length).toEqual(3);
+      expect(stockPrice.stocksWithHighestDrawdowns.length).not.toEqual(6);
+      expect(stockPrice.stocksWithHighestDrawdowns.length).toEqual(3);
       done();
     });
   });

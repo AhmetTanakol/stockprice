@@ -1,6 +1,9 @@
 import config from '../../config/config';
 import axios from 'axios';
 
+/**
+ * Different types of stock services can extend this Stock class
+ */
 abstract class Stock {
 
   protected async getStockPrices(symbol: string, params: any): Promise<void | Error> {

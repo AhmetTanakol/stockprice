@@ -3,6 +3,10 @@ import config from '../../config/config';
 
 sgMail.setApiKey(config.sendgrid.sendgrid_api_key);
 
+/**
+ * Sendgrid email client
+ * @param data
+ */
 export const sendEmail = (data: any) => {
   const mailData = {
     from: 'liqid_coding_challenge@challenge.com',
@@ -18,7 +22,7 @@ export const sendEmail = (data: any) => {
           startDate: data.startDate,
           endDate: data.endDate,
           stockPrices: data.stockPrices,
-          drawnDowns: data.drawnDowns,
+          drawDowns: data.drawDowns,
           maxDrawndown: data.maxDrawndown,
           returnRate: data.returnRate,
           symbol: data.symbol,

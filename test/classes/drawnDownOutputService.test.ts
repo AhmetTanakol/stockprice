@@ -1,8 +1,8 @@
-import DrawndownOutputService from '../../app/classes/DrawndownOutputService';
+import DrawdownOutputService from '../../app/classes/DrawdownOutputService';
 
-describe ('DrawndownOutputService Tests', () => {
-  test('return output for drawndowns', async done => {
-    const drawndownOutputService = new DrawndownOutputService();
+describe ('DrawdownOutputService Tests', () => {
+  test('return output for drawdowns', async done => {
+    const drawdownOutputService = new DrawdownOutputService();
     const stockInfo = [
         {
           date: '23.03.2018',
@@ -26,8 +26,8 @@ describe ('DrawndownOutputService Tests', () => {
           drawDown: 4.7,
         }
       ];
-    const outputOfStockPrices = drawndownOutputService.createOutput(stockInfo);
-    const expectedResult = 'First 3 Drawndowns:\n' +
+    const outputOfStockPrices = drawdownOutputService.createOutput(stockInfo);
+    const expectedResult = 'First 3 Drawdowns:\n' +
     '-2.9% (169.92 on 23.03.2018 -> 164.94 on 23.03.2018)\n' +
     '-3.8% (173.1 on 26.03.2018 -> 166.44 on 26.03.2018)\n' +
     '-4.7% (175.15 on 27.03.2018 -> 166.92 on 27.03.2018)\n' +

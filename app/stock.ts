@@ -47,17 +47,11 @@ import { head, last } from 'lodash';
       stockPrice.lastStockInfo = last(stockPrice.stockInfo);
       stockPrice.initialStockInfo = head(stockPrice.stockInfo);
       const stockPrices = stockPrice.stockPriceOutputService.createOutput(stockPrice.stockInfo);
-      const drawnDowns = stockPrice.drawndownOutputService.createOutput(stockPrice.stocksWithHighestDrawndowns);
+      const drawDowns = stockPrice.drawdownOutputService.createOutput(stockPrice.stocksWithHighestDrawdowns);
       const returnRate = stockPrice.stockReturnOutputService.createOutput(stockPrice.calculateStockReturn());
-      const results = stockPrices + '\n\n' + drawnDowns + '\n\n' + returnRate;
+      const results = stockPrices + '\n\n' + drawDowns + '\n\n' + returnRate;
       console.log(results);
-      /**
-       * Email is sent when there is a provided test email and email sending is activated
-       * Currently, email is sent when all information is fetched at once
-       */
-      if (config.email === 'active' && config.sendgrid.test_email !== '') {
-        stockPrice.sendEmailOfStockPrices();
-      }
+      stockPrice.sendEmailOfStockPrices();
     } catch (err) {
       throw err;
     }
@@ -91,15 +85,15 @@ import { head, last } from 'lodash';
       try {
         /**
          * Stock prices should be displayed at every step
-         * Maximum drawndowns and return rate are displayed only at the end
+         * Maximum drawdowns and return rate are displayed only at the end
          *
          */
         let results = stockPrice.stockPriceOutputService.createOutput(stockPrice.stockInfo);
         if (numberOfRequests === 0) {
           stockPrice.lastStockInfo = last(stockPrice.stockInfo);
-          const drawnDowns = stockPrice.drawndownOutputService.createOutput(stockPrice.stocksWithHighestDrawndowns);
+          const drawDowns = stockPrice.drawdownOutputService.createOutput(stockPrice.stocksWithHighestDrawdowns);
           const returnRate = stockPrice.stockReturnOutputService.createOutput(stockPrice.calculateStockReturn());
-          results += '\n\n' + drawnDowns + '\n\n' + returnRate;
+          results += '\n\n' + drawDowns + '\n\n' + returnRate;
         }
         numberOfRequests -= 1;
         console.log(results);

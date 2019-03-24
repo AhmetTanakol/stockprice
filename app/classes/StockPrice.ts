@@ -1,10 +1,10 @@
 import Stock from './Stock';
 import StockPriceOutputService from './StockPriceOutputService';
-import DrawndownOutputService from './DrawndownOutputService';
+import DrawdownOutputService from './DrawdownOutputService';
 import StockReturnOutputService from './StockReturnOutputService';
 import MailService from './MailService';
 import {
-  drawnDownStringer,
+  drawDownStringer,
   round,
   stockPriceStringer,
   stockReturnStringer
@@ -33,10 +33,10 @@ class StockPrice extends Stock  {
   private _symbol: string;
   private _stockInfo: IStockInformation[];
   private _stockPriceOutputService: StockPriceOutputService;
-  private _drawndownOutputService: DrawndownOutputService;
+  private _drawdownOutputService: DrawdownOutputService;
   private _stockReturnOutputService: StockReturnOutputService;
   private _mailService: MailService;
-  private _stocksWithHighestDrawndowns: IStockInformation[];
+  private _stocksWithHighestDrawdowns: IStockInformation[];
   private _lastStockInfo: IStockInformation;
   private _initialStockInfo: IStockInformation;
   private _endDate?: string;
@@ -49,9 +49,9 @@ class StockPrice extends Stock  {
     this._startDate = '';
     this._endDate = '';
     this._stockInfo = [];
-    this._stocksWithHighestDrawndowns = [];
+    this._stocksWithHighestDrawdowns = [];
     this._stockPriceOutputService = new StockPriceOutputService();
-    this._drawndownOutputService = new DrawndownOutputService();
+    this._drawdownOutputService = new DrawdownOutputService();
     this._stockReturnOutputService = new StockReturnOutputService();
     this._mailService = new MailService();
   }
@@ -100,20 +100,20 @@ class StockPrice extends Stock  {
     return this._stockPriceOutputService;
   }
 
-  get drawndownOutputService(): DrawndownOutputService {
-    return this._drawndownOutputService;
+  get drawdownOutputService(): DrawdownOutputService {
+    return this._drawdownOutputService;
   }
 
   get stockReturnOutputService(): StockReturnOutputService {
     return this._stockReturnOutputService;
   }
 
-  get stocksWithHighestDrawndowns(): IStockInformation[] {
-    return this._stocksWithHighestDrawndowns;
+  get stocksWithHighestDrawdowns(): IStockInformation[] {
+    return this._stocksWithHighestDrawdowns;
   }
 
-  set stocksWithHighestDrawndowns(value: IStockInformation[]) {
-    this._stocksWithHighestDrawndowns = value;
+  set stocksWithHighestDrawdowns(value: IStockInformation[]) {
+    this._stocksWithHighestDrawdowns = value;
   }
 
   get lastStockInfo(): IStockInformation {
@@ -132,6 +132,11 @@ class StockPrice extends Stock  {
     this._initialStockInfo = value;
   }
 
+  /**
+   * Argument parser for a specific input
+   * Input Example:
+   * ts-node app/stock.ts "API_KEY=Gy-GuEPqtyvM4u1SvooJ" "AAPL" "Jan" "1" "2018" "-" "Feb" "5" "2018"
+   */
   public parseArguments(args: string[]): void {
     if (!_.isEmpty(args)) {
       const sDate = args[6] + args[4] + args[5];
@@ -151,17 +156,28 @@ class StockPrice extends Stock  {
     }
   }
 
+  /**
+   * Fetch stock prices, store the retrieved information for using data
+   * Set maximum drawdowns
+   * @param params
+   * @returns {Promise<void | Error>}
+   */
   public async fetchStockPrices(params: any): Promise<void | Error> {
     try {
       this._stockInfo = [];
       const stockData: any = await this.getStockPrices(this._symbol, params);
       this.storeStockPrices(stockData);
-      this.orderDrawndowns();
+      this.orderDrawdowns();
       return Promise.resolve(stockData);
     } catch (error) {
       return Promise.reject(error);
     }
   }
+
+  /**
+   * Store data and calculate drawndowns
+   * @param stockData
+   */
   public storeStockPrices(stockData: any): void {
     _.each(stockData, (data: any) => {
       const date = moment(new Date(data[0])).format('DD.MM.YYYY');
@@ -173,6 +189,10 @@ class StockPrice extends Stock  {
     });
   }
 
+  /**
+   * Calculate stock return
+   * @returns {IStockReturn}
+   */
   public calculateStockReturn(): IStockReturn {
     if (this.lastStockInfo === undefined || this.initialStockInfo === undefined) {
       return {};
@@ -188,19 +208,26 @@ class StockPrice extends Stock  {
     };
   }
 
-  public orderDrawndowns(): void {
-    const stocksWithHighestDrawndowns = _.take(_.orderBy(this._stockInfo, ['drawDown'], ['desc'])
+  /**
+   * Find first 3 drawndowns
+   * If there exist entries in the stocksWithHighestDrawdowns
+   * This means we run the program multiple times
+   * In order to find first 3 drawndowns, we need to see all the data
+   * Merge 2 sorted arrays (old one and the new one) and get first 3 entries
+   */
+  public orderDrawdowns(): void {
+    const stocksWithHighestDrawdowns = _.take(_.orderBy(this._stockInfo, ['drawDown'], ['desc'])
                                               , 3);
-    if (!_.isEmpty(this.stocksWithHighestDrawndowns)) {
-      const mergedDrawndownsArrays =
-      this.stocksWithHighestDrawndowns
-      .concat(stocksWithHighestDrawndowns)
+    if (!_.isEmpty(this.stocksWithHighestDrawdowns)) {
+      const mergedDrawdownsArrays =
+      this.stocksWithHighestDrawdowns
+      .concat(stocksWithHighestDrawdowns)
       .sort((stock1, stock2) => {
         return stock2.drawDown - stock1.drawDown ;
       });
-      this.stocksWithHighestDrawndowns = _.take(mergedDrawndownsArrays, 3);
+      this.stocksWithHighestDrawdowns = _.take(mergedDrawdownsArrays, 3);
     } else {
-      this.stocksWithHighestDrawndowns = stocksWithHighestDrawndowns;
+      this.stocksWithHighestDrawdowns = stocksWithHighestDrawdowns;
     }
   }
 
@@ -212,16 +239,20 @@ class StockPrice extends Stock  {
     }
   }
 
+  /**
+   * Send email
+   * Format can be changed here, however email template should be updated
+   */
   public sendEmailOfStockPrices() {
-    const drawnDownsInfo = drawnDownStringer(this._stocksWithHighestDrawndowns);
+    const drawDownsInfo = drawDownStringer(this._stocksWithHighestDrawdowns);
     const stockPricesInfo = stockPriceStringer(this._stockInfo);
     const returnRate = stockReturnStringer(this.calculateStockReturn());
     const mailData = {
       startDate: this._startDate,
       endDate: this._startDate,
       stockPrices: stockPricesInfo.stockPrices,
-      drawnDowns: drawnDownsInfo.drawnDowns,
-      maxDrawndown: drawnDownsInfo.maxDrawndown,
+      drawDowns: drawDownsInfo.drawDowns,
+      maxDrawdown: drawDownsInfo.maxDrawdown,
       returnRate: returnRate,
       symbol: this._symbol,
     };

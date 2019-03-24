@@ -10,21 +10,21 @@ export const round = (number: number, decimals = 1): number => {
   );
 };
 
-export const drawnDownStringer = (stocksWithHighestDrawndowns: IStockInformation[]): any => {
-  let drawnDowns = [];
-  _.each(stocksWithHighestDrawndowns, (stock: IStockInformation) => {
-    const drawnDown = `-${stock.drawDown}% (${stock.highestPrice} on ${stock.date} -> ` +
+export const drawDownStringer = (stocksWithHighestDrawdowns: IStockInformation[]): any => {
+  let drawDowns = [];
+  _.each(stocksWithHighestDrawdowns, (stock: IStockInformation) => {
+    const drawDown = `-${stock.drawDown}% (${stock.highestPrice} on ${stock.date} -> ` +
       `${stock.lowestPrice} on ${stock.date})`;
-    drawnDowns.push({drawnDown: drawnDown});
+    drawDowns.push({drawDown: drawDown});
   });
-  const stockWithHighestDD = stocksWithHighestDrawndowns[0];
-  const maximumDrawndown = `Maximum drawdown: -${stockWithHighestDD.drawDown}% ` +
+  const stockWithHighestDD = stocksWithHighestDrawdowns[0];
+  const maximumDrawdown = `Maximum drawdown: -${stockWithHighestDD.drawDown}% ` +
     `(${stockWithHighestDD.highestPrice} on ${stockWithHighestDD.date} -> ` +
     `${stockWithHighestDD.lowestPrice} on ${stockWithHighestDD.date})`;
 
   return {
-    drawnDowns: drawnDowns,
-    maximumDrawndown: maximumDrawndown
+    drawDowns: drawDowns,
+    maximumDrawdown: maximumDrawdown
   };
 };
 

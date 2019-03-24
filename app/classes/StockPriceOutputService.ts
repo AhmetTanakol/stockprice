@@ -3,6 +3,9 @@ import { IStockInformation } from '../classes/StockPrice';
 import { each, isEmpty, trim } from 'lodash';
 import { stockPriceStringer } from '../utils/index';
 
+/**
+ * A service to create strings to display stock price information on console
+ */
 class StockPriceOutputService implements IOutputService {
 
     public createOutput(stockInfo: IStockInformation[]): string {
