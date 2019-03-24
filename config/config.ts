@@ -14,7 +14,7 @@ const config = {
                    'd-af5c62de122143d183f91621e1c43769',
       test_email: process.env.SENDGRID_TEST_EMAIL || ''
     },
-    email: 'inactive'
+    email: 'active'
   },
   test: {
     quandl: {

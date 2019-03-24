@@ -47,8 +47,10 @@ import { head, last } from 'lodash';
       stockPrice.lastStockInfo = last(stockPrice.stockInfo);
       stockPrice.initialStockInfo = head(stockPrice.stockInfo);
       const stockPrices = stockPrice.stockPriceOutputService.createOutput(stockPrice.stockInfo);
-      const drawDowns = stockPrice.drawdownOutputService.createOutput(stockPrice.stocksWithHighestDrawdowns);
-      const returnRate = stockPrice.stockReturnOutputService.createOutput(stockPrice.calculateStockReturn());
+      const drawDowns =
+        stockPrice.drawdownOutputService.createOutput(stockPrice.stocksWithHighestDrawdowns);
+      const returnRate =
+        stockPrice.stockReturnOutputService.createOutput(stockPrice.calculateStockReturn());
       const results = stockPrices + '\n\n' + drawDowns + '\n\n' + returnRate;
       console.log(results);
       stockPrice.sendEmailOfStockPrices();
@@ -91,8 +93,10 @@ import { head, last } from 'lodash';
         let results = stockPrice.stockPriceOutputService.createOutput(stockPrice.stockInfo);
         if (numberOfRequests === 0) {
           stockPrice.lastStockInfo = last(stockPrice.stockInfo);
-          const drawDowns = stockPrice.drawdownOutputService.createOutput(stockPrice.stocksWithHighestDrawdowns);
-          const returnRate = stockPrice.stockReturnOutputService.createOutput(stockPrice.calculateStockReturn());
+          const drawDowns =
+            stockPrice.drawdownOutputService.createOutput(stockPrice.stocksWithHighestDrawdowns);
+          const returnRate =
+            stockPrice.stockReturnOutputService.createOutput(stockPrice.calculateStockReturn());
           results += '\n\n' + drawDowns + '\n\n' + returnRate;
         }
         numberOfRequests -= 1;

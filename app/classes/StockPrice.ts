@@ -120,12 +120,12 @@ class StockPrice extends Stock  {
     return this._lastStockInfo;
   }
 
-  get initialStockInfo(): IStockInformation {
-    return this._initialStockInfo;
-  }
-
   set lastStockInfo(value: IStockInformation) {
     this._lastStockInfo = value;
+  }
+
+  get initialStockInfo(): IStockInformation {
+    return this._initialStockInfo;
   }
 
   set initialStockInfo(value: IStockInformation) {
@@ -135,7 +135,7 @@ class StockPrice extends Stock  {
   /**
    * Argument parser for a specific input
    * Input Example:
-   * ts-node app/stock.ts "API_KEY=Gy-GuEPqtyvM4u1SvooJ" "AAPL" "Jan" "1" "2018" "-" "Feb" "5" "2018"
+   * ts-node app/stock.ts API_KEY=Gy-GuEPqtyvM4u1SvooJ AAPL Jan 1 2018 - Feb 5 2018
    */
   public parseArguments(args: string[]): void {
     if (!_.isEmpty(args)) {
@@ -217,7 +217,7 @@ class StockPrice extends Stock  {
    */
   public orderDrawdowns(): void {
     const stocksWithHighestDrawdowns = _.take(_.orderBy(this._stockInfo, ['drawDown'], ['desc'])
-                                              , 3);
+                                            , 3);
     if (!_.isEmpty(this.stocksWithHighestDrawdowns)) {
       const mergedDrawdownsArrays =
       this.stocksWithHighestDrawdowns
@@ -244,20 +244,24 @@ class StockPrice extends Stock  {
    * Format can be changed here, however email template should be updated
    */
   public sendEmailOfStockPrices() {
-    const drawDownsInfo = drawDownStringer(this._stocksWithHighestDrawdowns);
-    const stockPricesInfo = stockPriceStringer(this._stockInfo);
-    const returnRate = stockReturnStringer(this.calculateStockReturn());
-    const mailData = {
-      startDate: this._startDate,
-      endDate: this._startDate,
-      stockPrices: stockPricesInfo.stockPrices,
-      drawDowns: drawDownsInfo.drawDowns,
-      maxDrawdown: drawDownsInfo.maxDrawdown,
-      returnRate: returnRate,
-      symbol: this._symbol,
-    };
-    this._mailService.mailData = mailData;
-    this._mailService.sendStockPricesEmail();
+    if (_.isEmpty(this._stockInfo)) {
+      console.log('No data to send');
+    } else {
+      const stockPricesInfo = stockPriceStringer(this._stockInfo);
+      const drawDownsInfo = drawDownStringer(this._stocksWithHighestDrawdowns);
+      const returnRate = stockReturnStringer(this.calculateStockReturn());
+      const mailData = {
+        startDate: this._startDate,
+        endDate: this._startDate,
+        stockPrices: stockPricesInfo.stockPrices,
+        drawDowns: drawDownsInfo.drawDowns,
+        maxDrawdown: drawDownsInfo.maxDrawdown,
+        returnRate,
+        symbol: this._symbol,
+      };
+      this._mailService.mailData = mailData;
+      this._mailService.sendStockPricesEmail();
+    }
   }
 
 }
